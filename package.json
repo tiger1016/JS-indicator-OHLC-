@@ -1,0 +1,24 @@
+{
+  "name": "stock-indicator",
+  "version": "1.0.0",
+  "description": "A simple stock market indicator that uses EMA and MACD to be run from linux command line",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync-api": "node ./sync-from-api",
+    "sync-db": "node ./sync-from-db"
+  },
+  "author": "Aneem Patrabansha",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "dotenv": "^8.2.0",
+    "mysql2": "^1.7.0",
+    "sequelize": "^5.19.6",
+    "technicalindicators": "^2.0.9",
+    "yargs": "^14.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.4"
+  }
+}
