@@ -5,10 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "sync-api": "node ./scripts/elder/sync-from-api",
-    "sync-db": "node ./scripts/elder/sync-from-db",
-    "rsi": "node ./scripts/rsi",
-    "sma": "node ./scripts/sma"
+    "start": "node index.js"
   },
   "author": "Aneem Patrabansha",
   "license": "ISC",

@@ -2,18 +2,6 @@ const { EMA, MACD, RSI, SMA } = require('technicalindicators');
 const axios = require('axios');
 const dynamicModel = require('./db/models/dynamic');
 
-function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
-    let color = 'Blue';
-    if (currentEMA > prevEMA && currentMACD > prevMACD) {
-        color = 'Green';
-    }
-    if (currentEMA < prevEMA && currentMACD < prevMACD) {
-        color = 'Red';
-    }
-    // console.log(currentEMA, prevEMA, currentMACD, prevMACD, color);
-    return color;
-}
-
 function calculateMACD({ fastPeriod = 12, slowPeriod = 26, signalPeriod = 9, values }) {
     return MACD.calculate({ fastPeriod, slowPeriod, signalPeriod, values });
 }
@@ -59,58 +47,31 @@ async function getRecentTick({ symbol, interval = '1min', func = 'TIME_SERIES_IN
     return Object.entries(data[`Time Series (${interval})`]).map(x => ({ time: x[0], close: +x[1]['4. close'] }));
 }
 
-// for dynamic table creation during data insertion
-async function insertElderRowData(data, symbol) {
+async function getExistingData({ type, modelName }) {
     try {
-        const model = dynamicModel.getElderModel(`${symbol}_elder`);
-        return model.bulkCreate(data, {
-            ignoreDuplicates: true,
-        });
+        const model = dynamicModel.getModel({ type, modelName });
+        const config = {
+            order: [['time', 'DESC']],
+            raw: true,
+        };
+        if (process.env.NUMBER_ROWS_SYNC) {
+            config.limit = +process.env.NUMBER_ROWS_SYNC;
+        }
+        return model.findAll(config);
     } catch (err) {
         console.log(err);
     }
-}
-
-// for dynamic table creation during data insertion
-async function insertRSIRowData(data, symbol) {
-    try {
-        const model = dynamicModel.getRSIModel(`${symbol}_rsi`);
-        return model.bulkCreate(data, {
-            ignoreDuplicates: true,
-        });
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-async function insertSMARowData(data, symbol) {
-    try {
-        const model = dynamicModel.getSMAModel(`${symbol}_sma`);
-        return model.bulkCreate(data, {
-            ignoreDuplicates: true,
-        });
-    } catch (err) {
-        console.log(err);
-    }
-}
-async function closeConnection() {
-    return dynamicModel.closeConnection();
 }
 
 module.exports = {
-    closeConnection,
     getRecentEMA,
     getRecentMACD,
     calculateMACD,
     calculateEMA,
-    getPriceBarColor,
-    insertElderRowData,
     calculateRSI,
     calculateSMA,
     getRecentRSI,
     getRecentTick,
-    insertRSIRowData,
-    closeConnection,
     getRecentSMA,
-    insertSMARowData
+    getExistingData
 };
