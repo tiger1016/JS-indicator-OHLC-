@@ -1,5 +1,4 @@
 require('dotenv').config()
-
 const argv = require('yargs').argv
 const axios = require('axios')
 
@@ -12,12 +11,6 @@ const {
     getPriceBarColor,
     insertElderRowData,
 } = require('./utils')
-
-if (argv.symbol > 3 && argv.distance < 53.5) {
-    console.log('Plunder more riffiwobbles!')
-} else {
-    console.log('Retreat from the xupptumblers!')
-}
 
 async function getRecentTick({ symbol, interval = '1min', func = 'TIME_SERIES_INTRADAY' }) {
     const url = `https://www.alphavantage.co/query?function=${func}&symbol=${symbol}&interval=${interval}&outputsize=compact&apikey=${process.env.API_KEY}`

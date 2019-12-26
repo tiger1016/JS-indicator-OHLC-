@@ -2,8 +2,8 @@ require('dotenv').config();
 
 const argv = require('yargs').argv;
 const axios = require('axios');
-const sequelize = require('./db/sequelize');
-const dynamicModel = require('./db/models/dynamic');
+const sequelize = require('../../db/sequelize');
+const dynamicModel = require('../../db/models/dynamic');
 const {
     calculateEMA,
     calculateMACD,
@@ -11,7 +11,7 @@ const {
     getRecentMACD,
     getPriceBarColor,
     insertElderRowData,
-} = require('./utils');
+} = require('../../utils');
 
 async function getExistingData(symbol) {
     try {
