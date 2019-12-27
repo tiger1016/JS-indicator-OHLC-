@@ -48,10 +48,12 @@ async function getRecentTick({ symbol, interval = '1min', func = 'TIME_SERIES_IN
 }
 
 async function getExistingData({ type, modelName }) {
+    let order = 'DESC';
+
     try {
         const model = dynamicModel.getModel({ type, modelName });
         const config = {
-            order: [['time', 'DESC']],
+            order: [['time', order]],
             raw: true,
         };
         if (process.env.NUMBER_ROWS_SYNC) {
@@ -73,5 +75,5 @@ module.exports = {
     getRecentRSI,
     getRecentTick,
     getRecentSMA,
-    getExistingData
+    getExistingData,
 };
