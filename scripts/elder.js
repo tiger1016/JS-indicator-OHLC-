@@ -53,9 +53,9 @@ module.exports = {
 
             // technical indicators library expects the earliest data first. Thus reversing the data order. Only used for library
             const values = ohlcRows
-                .slice()
-                .reverse()
-                .map(({ close }) => close);
+            .slice()
+            .reverse()
+            .map(({ close }) => +close);
 
             // We are reversing the EMA values returned as it would make calculations easier later
             const EMA = calculateEMA({ values }).reverse();
