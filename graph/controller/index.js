@@ -34,8 +34,8 @@ async function getData(options) {
     let result;
     switch (type) {
         case 'elder':
-            const ohlc = await getExistingData({ type: 'ohlc', modelName: symbol });
-            const elder = await getExistingData({ type: 'elder', modelName: `${symbol}_elder` });
+            const ohlc = await getExistingData({ type: 'ohlc', modelName: symbol, order:'ASC' });
+            const elder = await getExistingData({ type: 'elder', modelName: `${symbol}_elder`, order:'ASC' });
             result = { ohlc, elder };
 
             break;
