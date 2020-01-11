@@ -3,6 +3,9 @@ const sequelize = require('../sequelize');
 let models = {
     ohlc: modelName => {
         return sequelize.define(modelName, {
+            open: DataTypes.DOUBLE,
+            high: DataTypes.DOUBLE,
+            low: DataTypes.DOUBLE,
             close: DataTypes.DOUBLE,
             time: DataTypes.DATE,
         });
@@ -38,7 +41,7 @@ let models = {
 function getModel({ type, modelName }) {
     let modelFn = models[type];
     if (!modelFn) {
-        throw `Model not fount`;
+        throw `Model:${modelName} not found`;
     }
     let model = modelFn(modelName);
     model.removeAttribute('id');

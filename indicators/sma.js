@@ -1,5 +1,7 @@
 const { insertData } = require('../db/models/dynamic');
-const { getRecentSMA, getRecentTick, getExistingData, calculateSMA } = require('../utils');
+const { calculateSMA } = require('../utils');
+const { getRecentSMA, getRecentTick } = require('../api');
+const { getExistingData } = require('../db/db-helper');
 
 module.exports = {
     insertData: async (data, symbol) => {

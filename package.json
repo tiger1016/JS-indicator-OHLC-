@@ -1,23 +1,31 @@
 {
-  "name": "stock-indicator",
-  "version": "1.0.0",
-  "description": "A simple stock market indicator that uses EMA and MACD to be run from linux command line",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
-  },
-  "author": "Aneem Patrabansha",
-  "license": "ISC",
-  "dependencies": {
-    "axios": "^0.19.0",
-    "dotenv": "^8.2.0",
-    "mysql2": "^1.7.0",
-    "sequelize": "^5.19.6",
-    "technicalindicators": "^2.0.9",
-    "yargs": "^14.2.0"
-  },
-  "devDependencies": {
-    "nodemon": "^1.19.4"
-  }
+    "name": "stock-indicator",
+    "version": "1.0.0",
+    "description": "A simple stock market indicator that uses EMA and MACD to be run from linux command line",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node index.js",
+        "start-graph-server": "node graph/server.js",
+        "make-graph": "node graph/make-graph.js",
+        "dev": "nodemon graph/server.js"
+    },
+    "author": "Aneem Patrabansha",
+    "license": "ISC",
+    "dependencies": {
+        "@tensorflow/tfjs-node": "^1.5.1",
+        "axios": "^0.19.0",
+        "dotenv": "^8.2.0",
+        "express": "^4.17.1",
+        "jquery": "^3.4.1",
+        "jsdom": "^15.2.1",
+        "mysql2": "^1.7.0",
+        "puppeteer": "^2.0.0",
+        "sequelize": "^5.19.6",
+        "technicalindicators": "^2.0.9",
+        "yargs": "^14.2.0"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.2"
+    }
 }

@@ -24,4 +24,3 @@ npm start -- --symbol="SPY" --type="elder" --action="api"
 npm start -- --symbol="SPY" --type="rsi" --action="db"
 
 Db and api-key config is stored in the .env file.
-The `NUMBER_ROWS_SYNC` variable is used to determine how many data points to sync while using data from database

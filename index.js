@@ -1,6 +1,6 @@
 require('dotenv').config();
 const argv = require('yargs').argv;
-const scripts = require('./scripts');
+const scripts = require('./indicators');
 const sequelize = require('./db/sequelize');
 
 // Main code here

@@ -1,12 +1,7 @@
 const { insertData } = require('../db/models/dynamic');
-const {
-    calculateEMA,
-    calculateMACD,
-    getRecentEMA,
-    getRecentMACD,
-    getRecentTick,
-    getExistingData,
-} = require('../utils');
+const { calculateEMA, calculateMACD } = require('../utils');
+const { getRecentEMA, getRecentMACD, getRecentTick } = require('../api');
+const { getExistingData } = require('../db/db-helper');
 
 function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
     let color = 'Blue';
@@ -53,9 +48,9 @@ module.exports = {
 
             // technical indicators library expects the earliest data first. Thus reversing the data order. Only used for library
             const values = ohlcRows
-            .slice()
-            .reverse()
-            .map(({ close }) => +close);
+                .slice()
+                .reverse()
+                .map(({ close }) => +close);
 
             // We are reversing the EMA values returned as it would make calculations easier later
             const EMA = calculateEMA({ values }).reverse();
