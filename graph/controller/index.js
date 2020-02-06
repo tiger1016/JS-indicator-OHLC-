@@ -75,12 +75,13 @@ async function getAllData(options) {
             }
         });
     
-    const result = elder(process_day_data);    
-    const result_min = elder(ohlc.reverse());
+    
+    const result = elder(process_day_data.reverse());    
+    const result_min = elder(ohlc);
 
     insertData({ data: result_min.elder, modelName: `${symbol}_elder`, type: 'elder' });
  
-    return { ohlc: process_day_data.reverse(), elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20), ohlc_min: ohlc.slice(0,20), ema_min: result_min.ema.slice(0, 20), macd_min: result_min.macd.slice(0, 20), elder_min: result_min.elder.slice(0, 20) };
+    return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20), ohlc_min: ohlc.slice(0,20), ema_min: result_min.ema.slice(0, 20), macd_min: result_min.macd.slice(0, 20), elder_min: result_min.elder.slice(0, 20) };
 }
 
 async function getOneData(options) {

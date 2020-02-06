@@ -1,6 +1,6 @@
 const dynamicModel = require('./models/dynamic');
 
-async function getExistingData({ type, modelName, limit = 2000000, order = 'DESC' }) {
+async function getExistingData({ type, modelName, limit = 100000, order = 'DESC' }) {
     try {
         const model = dynamicModel.getModel({ type, modelName });
         const config = {
@@ -27,10 +27,10 @@ async function getNewData({ type, modelName }) {
     }
 }
 
-async function insertOneData({ type, modelName, data }) {
+async function insertOneData({ data, modelName, type }) {
     try {
         const model = dynamicModel.getModel({ type, modelName });
-        model.upsert(data,{individualHooks: true});
+        model.upsert(data);
     } catch (err) {
         console.log(err);
     }

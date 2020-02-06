@@ -1,4 +1,4 @@
-const { calculateMA, calculateEMA } = require('./calculate');
+const { calculateMACD, calculateEMA } = require('../../utils');
 
 const convertTimeframe = input => {
     let opens = [],
@@ -32,18 +32,21 @@ const convertTimeframe = input => {
 const elder = data => {
     const values = data
         .slice()
+        .reverse()
         .map(( {close }) => +close);
 
-    const ema = calculateEMA(values, 13);
-    const macd = calculateMA(values, 13);
-    
+    const ema = calculateEMA({ values }).reverse();
+    const macd = calculateMACD({ values })
+        .map(({ histogram }) => histogram)
+        .reverse();
+
     const elder = [];
-    for (let i = 1; i < ema.length - 1; i++) {
+    for (let i = 0; i < ema.length - 1; i++) {
         if (
             ema[i] != undefined &&
-            ema[i - 1] != undefined &&
+            ema[i + 1] != undefined &&
             ema[i] != undefined &&
-            ema[i - 1] != undefined
+            ema[i + 1] != undefined
         ) {
             elder.push({
                 time: data[i].time,
@@ -51,17 +54,13 @@ const elder = data => {
                 price: data[i].close,
                 color: getPriceBarColor({
                     currentEMA: ema[i],
-                    prevEMA: ema[i - 1],
+                    prevEMA: ema[i + 1],
                     currentMACD: macd[i],
-                    prevMACD: macd[i - 1],
+                    prevMACD: macd[i + 1],
                 }),
             });
         }
     }
-    
-    ema.reverse();
-    macd.reverse();
-    elder.reverse();
 
     return { ema, macd, elder };
 }

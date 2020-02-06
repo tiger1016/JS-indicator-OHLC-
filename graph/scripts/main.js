@@ -137,7 +137,7 @@ $(document).ready(function() {
 
         const dayCount = 13;
         const multiplier = 2 / (dayCount + 1);
-
+      
         if (timeStamp_day(ohlc[0].time) === timeStamp_day(ohlc_new.time)) {
             if (timeStamp_min(ohlc_min[0].time) !== timeStamp_min(ohlc_new.time)) {
                 ema_min = [ohlc_new.close * multiplier + ema_min[0] * (1 - multiplier), ...ema_min];
@@ -182,12 +182,13 @@ $(document).ready(function() {
             ohlc[0].high = Math.max(ohlc[0].high, parseInt(ohlc_new.high));
             ohlc[0].low = Math.min(ohlc[0].low, parseInt(ohlc_new.low));
 
-            ema[0] = ohlc_new.close * multiplier + ema[1] * (1 - multiplier);
+            ema[0] = ohlc_new.close * multiplier + ema[0] * (1 - multiplier);
 
-            macd[0] = macd[1] + ohlc_new.close - ohlc[dayCount].close;
+            macd[0] = macd[0] + ohlc_new.close - ohlc[dayCount - 1].close;
 
             elder[0] = {
                 time: ohlc_new.time,
+                symbol: 'spy',
                 price: ohlc_new.close,
                 color: getPriceBarColor({
                     currentEMA: ema[0],
@@ -203,6 +204,7 @@ $(document).ready(function() {
 
             elder = [{
                 time: ohlc_new.time,
+                symbol: 'spy',
                 price: ohlc_new.close,
                 color: getPriceBarColor({
                     currentEMA: ema[0],
@@ -216,7 +218,7 @@ $(document).ready(function() {
             ema.pop();
             macd.pop();
         }
-        
+
         localStorage.setItem('ohlc', JSON.stringify(ohlc));
         localStorage.setItem('ema', JSON.stringify(ema));
         localStorage.setItem('macd', JSON.stringify(macd));
@@ -347,10 +349,10 @@ $(document).ready(function() {
                 localStorage.setItem('ema_min', emaminToStore);
                 localStorage.setItem('macd_min', macdminToStore);
                 localStorage.setItem('elder_min', elderminToStore);
-                     
-            })
-        updateData();
-        setInterval(updateData, 40000);    
+                
+                updateData();
+                setInterval(updateData, 40000); 
+            })               
     }
     init();
 });
