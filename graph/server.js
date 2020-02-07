@@ -3,9 +3,14 @@ const argv = require('yargs').argv;
 
 const express = require('express');
 const app = express();
+var bodyParser = require('body-parser');
 const path = require('path');
 const controller = require('./controller');
 const port = process.env.GRAPH_SERVER_PORT || 8080;
+
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', async function(req, res) {
     let result = await controller.getHTML();
@@ -14,8 +19,23 @@ app.get('/', async function(req, res) {
 });
 
 app.get('/data', async function(req, res) {
-    const { type, symbol } = req.query;
-    let result = await controller.getData({ type, symbol });
+    const { type, symbol, cond } = req.query;
+    let result;
+
+    if (cond === 'one') {
+        result = await controller.getOneData({ type, symbol });
+    } else if (cond === 'all') {
+        result = await controller.getAllData({ type, symbol });
+    } else {
+        result = await controller.getData({ type, symbol });
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    res.send(result);
+});
+
+app.post('/insert', async function(req, res) {
+    let result = await controller.WriteOneData(req.body);   
     res.setHeader('Content-Type', 'application/json');
     res.send(result);
 });
