@@ -104,7 +104,7 @@ async function getAllData(options) {
 
     insertData({ data: result_min_elder, modelName: `${symbol}_elder`, type: 'elder' });
  
-    return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20), ohlc_min: ohlc.slice(0, 10) };
+    return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20), ohlc_min: ohlc.slice(0,20) };
 }
 
 async function getOneData(options) {

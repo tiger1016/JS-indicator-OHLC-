@@ -115,6 +115,7 @@ module.exports = {
             console.log('Total no of ohlcRows: ', ohlc.length);
 
             // technical indicators library expects the earliest data first. Thus reversing the data order. Only used for library
+
             var process_day_data = [];
             var ex_stamp = '';
             var temp_array = [];
@@ -167,6 +168,7 @@ module.exports = {
                 })
 
             return result_min_elder;
+
         },
     },
 };
