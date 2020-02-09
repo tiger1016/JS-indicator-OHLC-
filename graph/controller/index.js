@@ -54,6 +54,9 @@ async function getAllData(options) {
     var process_day_data = [];
     var ex_stamp = '';
     var temp_array = [];
+    var result_min_elder = [];
+    var result_min_ema = [];
+    var result_min_macd = [];
 
     ohlc
         .slice()
@@ -62,6 +65,10 @@ async function getAllData(options) {
             if (ex_stamp !== timeStamp_day(element.time)) {                        
                 if (ex_stamp !== '') {
                     process_day_data.push(convertTimeframe(temp_array));
+                    var result_min = elder(temp_array.reverse());
+                    result_min_elder = [...result_min.elder, ...result_min_elder];                    
+                    result_min_ema = [...result_min.ema, ...result_min_ema];                    
+                    result_min_macd = [...result_min.macd, ...result_min_macd];
                     ex_stamp = timeStamp_day(element.time);
                     temp_array = [];
                     temp_array.push(element);
@@ -71,17 +78,22 @@ async function getAllData(options) {
                 }
             } else {
                 temp_array.push(element);
-                if (index === ohlc.length -1) process_day_data.push(convertTimeframe(temp_array));
+                if (index === ohlc.length -1) {
+                    process_day_data.push(convertTimeframe(temp_array));
+                    var result_min = elder(temp_array.reverse());
+                    result_min_elder = [...result_min.elder, ...result_min_elder];                    
+                    result_min_ema = [...result_min.ema, ...result_min_ema];                    
+                    result_min_macd = [...result_min.macd, ...result_min_macd];
+                }
             }
         });
     
     
-    const result = elder(process_day_data.reverse());    
-    const result_min = elder(ohlc);
+    const result = elder(process_day_data.reverse());
 
-    insertData({ data: result_min.elder, modelName: `${symbol}_elder`, type: 'elder' });
+    insertData({ data: result_min_elder, modelName: `${symbol}_elder`, type: 'elder' });
  
-    return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20), ohlc_min: ohlc.slice(0,20), ema_min: result_min.ema.slice(0, 20), macd_min: result_min.macd.slice(0, 20), elder_min: result_min.elder.slice(0, 20) };
+    return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20), ohlc_min: ohlc.slice(0,20), ema_min: result_min_ema.slice(0, 20), macd_min: result_min_macd.slice(0, 20), elder_min: result_min_elder.slice(0, 20) };
 }
 
 async function getOneData(options) {
