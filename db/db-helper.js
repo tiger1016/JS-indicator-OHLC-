@@ -1,6 +1,6 @@
 const dynamicModel = require('./models/dynamic');
 
-async function getExistingData({ type, modelName, limit = 200000, order = 'DESC' }) {
+async function getExistingData({ type, modelName, limit = 100000, order = 'DESC' }) {
     try {
         const model = dynamicModel.getModel({ type, modelName });
         const config = {

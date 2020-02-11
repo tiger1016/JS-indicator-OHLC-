@@ -11,6 +11,7 @@ const puppeteer = require('puppeteer');
 var graphsDir = path.join(__dirname, `../../output`);
 const { convertTimeframe, timeStamp_day, elder } = require('./assist');
 const { insertData } = require('../../db/models/dynamic');
+const elder_min = require('./elder_min');
 
 function getHTML() {
     const dom = new JSDOM(baseHTML);
@@ -76,9 +77,38 @@ async function getAllData(options) {
             }
         });
     
-    var i = 0;
     const result = elder(process_day_data.reverse());
+
+    result_min_elder = elder_min(ohlc, result.elder.slice().reverse());
+    /*
+    const elder_color = result.elder.slice().reverse();
+    const ohlc_color = ohlc.slice().reverse();
     
+    for (var bar = 13; bar < elder_color.length; bar++) {        
+        const pos1 = ohlc_color.findIndex(e => timeStamp_day(e.time) === timeStamp_day(elder_color[bar].time));
+        const pos2 = ohlc.findIndex(e => timeStamp_day(e.time) === timeStamp_day(elder_color[bar].time));
+        var prev_macd = result.macd.slice().reverse()[bar - 1];
+        var prev_ema = result.ema.slice().reverse()[bar - 1];
+        const multiplier = 2 / (13 + 1);
+        for (var j = pos1; j <= ohlc.length - pos2 - 1; j++) {
+            var cur_ema = ohlc_color[j].close * multiplier + prev_ema * (1 - multiplier);
+            var cur_macd = prev_macd + ohlc_color[j].close - elder_color[bar - 13].price;
+            result_min_elder.push({
+                time: ohlc_color[j].time,
+                symbol: 'spy',
+                price: ohlc_color[j].close,
+                color: getPriceBarColor({
+                    currentEMA: cur_ema,
+                    prevEMA: prev_ema,
+                    currentMACD: cur_macd,
+                    prevMACD: prev_macd,
+                }),
+            })
+            prev_macd = cur_macd;
+            prev_ema = cur_ema;
+        }
+    }*/
+    /*
     ohlc
         .slice()
         .map(element => {
@@ -101,10 +131,23 @@ async function getAllData(options) {
                 }
            }
         })
-
+*/
     insertData({ data: result_min_elder, modelName: `${symbol}_elder`, type: 'elder' });
  
     return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20), ohlc_min: ohlc.slice(0,20) };
+}
+
+
+function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
+    let color = 'Blue';
+    if (currentEMA > prevEMA && currentMACD > prevMACD && currentEMA - prevEMA < currentMACD - prevMACD) {
+        color = 'Green';
+    }
+    if (currentEMA < prevEMA && currentMACD < prevMACD && currentEMA - prevEMA > currentMACD - prevMACD) {
+        color = 'Red';
+    }
+    
+    return color;
 }
 
 async function getOneData(options) {

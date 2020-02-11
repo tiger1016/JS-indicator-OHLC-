@@ -85,5 +85,6 @@ const timeStamp_day = time =>
 module.exports = {
     timeStamp_day,
     convertTimeframe,
-    elder
+    elder,
+    getPriceBarColor
 }
