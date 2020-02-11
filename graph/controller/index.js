@@ -76,8 +76,21 @@ async function getAllData(options) {
         });
     
     const result = elder(process_day_data.reverse());
-  
+
     return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20) };
+}
+
+
+function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
+    let color = 'Blue';
+    if (currentEMA > prevEMA && currentMACD > prevMACD && currentEMA - prevEMA < currentMACD - prevMACD) {
+        color = 'Green';
+    }
+    if (currentEMA < prevEMA && currentMACD < prevMACD && currentEMA - prevEMA > currentMACD - prevMACD) {
+        color = 'Red';
+    }
+    
+    return color;
 }
 
 async function getOneData(options) {
