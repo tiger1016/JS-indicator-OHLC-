@@ -176,7 +176,7 @@ $(document).ready(function() {
             macd.pop();
         }
 
-        ohlc_min = JSON.parse(localStorage.getItem('ohlc_min'));
+        /*ohlc_min = JSON.parse(localStorage.getItem('ohlc_min'));
 
         if (timeStamp_min(ohlc_min[0].time) !== timeStamp_min(ohlc_new.time)) {
             fetch('insert', {
@@ -198,7 +198,7 @@ $(document).ready(function() {
                 }
             })
         }
-
+        */
         localStorage.setItem('ohlc', JSON.stringify(ohlc));
         localStorage.setItem('ema', JSON.stringify(ema));
         localStorage.setItem('macd', JSON.stringify(macd));
@@ -314,13 +314,11 @@ $(document).ready(function() {
                 const emaToStore = JSON.stringify(data.ema);
                 const macdToStore = JSON.stringify(data.macd);
                 const elderToStore = JSON.stringify(data.elder);
-                const ohlcminToStore = JSON.stringify(data.ohlc_min);
 
                 localStorage.setItem('ohlc', ohlcToStore);
                 localStorage.setItem('ema', emaToStore);
                 localStorage.setItem('macd', macdToStore);
                 localStorage.setItem('elder', elderToStore);
-                localStorage.setItem('ohlc_min', ohlcminToStore);
                 
                 updateData();
                 setInterval(updateData, 40000); 

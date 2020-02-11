@@ -1,7 +1,9 @@
 const { insertData } = require('../db/models/dynamic');
-const { calculateEMA, calculateMACD } = require('../utils');
 const { getRecentEMA, getRecentMACD, getRecentTick } = require('../api');
 const { getExistingData } = require('../db/db-helper');
+
+const { convertTimeframe, timeStamp_day, elder } = require('../graph/controller/assist');
+const elder_min = require('./elder_min');
 
 function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
     let color = 'Blue';
@@ -15,73 +17,6 @@ function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
     return color;
 }
 
-const timeStamp_day = time => 
-    time.toUTCString().slice(0, 17);
-
-const convertTimeframe = input => {
-    let opens = [],
-        highs = [],
-        lows = [],
-        closes = [];
-
-    for (let j = 0; j < input.length; j++) {
-        let elem = input[j];
-        let o = elem.open;
-        let h = elem.high;
-        let l = elem.low;
-        let c = elem.close;
-        if (o > 0 && o !== null) opens.push(o);
-        if (h > 0 && h !== null) highs.push(h);
-        if (l > 0 && l !== null) lows.push(l);
-        if (c > 0 && c !== null) closes.push(c);
-    }
-
-    let lastElem = input[input.length - 1];
-
-    return {          
-        open: opens[0],
-        high: Math.max.apply( Math, highs ),
-        low: Math.min.apply( Math, lows ),
-        close: lastElem.close,
-        time: lastElem.time,
-    };
-}
-
-const elder = data => {
-    const values = data
-        .slice()
-        .reverse()
-        .map(( {close }) => +close);
-
-    const ema = calculateEMA({ values }).reverse();
-    const macd = calculateMACD({ values })
-        .map(({ histogram }) => histogram)
-        .reverse();
-
-    const elder = [];
-    for (let i = 0; i < ema.length - 1; i++) {
-        if (
-            ema[i] != undefined &&
-            ema[i + 1] != undefined &&
-            ema[i] != undefined &&
-            ema[i + 1] != undefined
-        ) {
-            elder.push({
-                time: data[i].time,
-                symbol: 'spy',
-                price: data[i].close,
-                color: getPriceBarColor({
-                    currentEMA: ema[i],
-                    prevEMA: ema[i + 1],
-                    currentMACD: macd[i],
-                    prevMACD: macd[i + 1],
-                }),
-            });
-        }
-    }
-
-    return { ema, macd, elder };
-}
 
 module.exports = {
     insertData: async (data, symbol) => {
@@ -141,31 +76,9 @@ module.exports = {
                     }
                 });
             
-            var i = 0;
             const result = elder(process_day_data.reverse());
-            
-            ohlc
-                .slice()
-                .map(element => {
-                    if (result.elder[i] && timeStamp_day(element.time) === timeStamp_day(result.elder[i].time)) {
-                            result_min_elder.push({
-                                time: element.time,
-                                symbol: 'spy',
-                                price: element.close,
-                                color: result.elder[i].color
-                            })
-                    } else {
-                        i++;
-                        if (result.elder[i]) {
-                                result_min_elder.push({
-                                        time: element.time,
-                                        symbol: 'spy',
-                                        price: element.close,
-                                        color: result.elder[i].color
-                                    })
-                            }
-                    }
-                })
+
+            result_min_elder = elder_min(ohlc, result.elder.slice().reverse());
 
             return result_min_elder;
 
