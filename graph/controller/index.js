@@ -1,5 +1,3 @@
-const sequelize = require('../../db/sequelize');
-
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
 const path = require('path');
@@ -53,7 +51,6 @@ async function getAllData(options) {
     var process_day_data = [];
     var ex_stamp = '';
     var temp_array = [];
-    var result_min_elder = [];
 
     ohlc
         .slice()
@@ -62,6 +59,7 @@ async function getAllData(options) {
             if (ex_stamp !== timeStamp_day(element.time)) {                        
                 if (ex_stamp !== '') {
                     process_day_data.push(convertTimeframe(temp_array));
+                    if (index === ohlc.length - 1) process_day_data.push(element);
                     ex_stamp = timeStamp_day(element.time);
                     temp_array = [];
                     temp_array.push(element);
@@ -71,26 +69,13 @@ async function getAllData(options) {
                 }
             } else {
                 temp_array.push(element);
-                if (index === ohlc.length -1) process_day_data.push(convertTimeframe(temp_array));
+                if (index === ohlc.length - 1) process_day_data.push(convertTimeframe(temp_array));
             }
         });
     
     const result = elder(process_day_data.reverse());
 
     return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20) };
-}
-
-
-function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
-    let color = 'Blue';
-    if (currentEMA > prevEMA && currentMACD > prevMACD && currentEMA - prevEMA < currentMACD - prevMACD) {
-        color = 'Green';
-    }
-    if (currentEMA < prevEMA && currentMACD < prevMACD && currentEMA - prevEMA > currentMACD - prevMACD) {
-        color = 'Red';
-    }
-    
-    return color;
 }
 
 async function getOneData(options) {
@@ -147,6 +132,25 @@ async function makeGraph() {
     return images.map(({ symbol }) => symbol);
 }
 
+
+async function makeEmptyGraph(images) {
+    // first make sure the folder exists
+    if (!fs.existsSync(graphsDir)) {
+        fs.mkdirSync(graphsDir);
+    }
+    // save as files
+    images.forEach(image => {
+        let base64String = image.url;
+        // Remove header
+        let base64Image = base64String.split(';base64,').pop();
+        fs.writeFile(path.join(graphsDir, `${image.symbol}.png`), base64Image, { encoding: 'base64' }, function(
+            err
+        ) {});
+    });
+    return { res: 'ok' };
+}
+
+
 module.exports = {
     getHTML,
     makeGraph,
@@ -154,4 +158,5 @@ module.exports = {
     getAllData,
     getOneData,
     WriteOneData,
+    makeEmptyGraph,
 };

@@ -44,23 +44,7 @@ $(document).ready(function() {
                 y: '90%',
             },
         ],
-    };
-
-    function calculateMA(data, dayCount) {
-        let result = [];
-        for (let i = 0, len = data.length; i < len; i++) {
-            if (i < dayCount) {
-                result.push('-');
-                continue;
-            }
-            let sum = 0;
-            for (let j = 0; j < dayCount; j++) {
-                sum += +data[i - j][1];
-            }
-            result.push(sum / dayCount);
-        }
-        return result;
-    }
+    };   
 
     function calculateEMA(data, dayCount) {
         let result = [];
@@ -79,37 +63,6 @@ $(document).ready(function() {
             }
         }
         return result;
-    }
-
-    async function getData({ symbol }) {
-        const data = await (await fetch(`data?type=elder&symbol=${symbol}`)).json();
-        let { ohlc, elder } = data;
-        let ohlcObj = {};
-        let ohlcData = [];
-        let categoryData = [];
-        let elderData = [];
-        ohlc.forEach(ohlc => {
-            ohlcObj[ohlc['time']] = [ohlc.open, ohlc.close, ohlc.low, ohlc.high];
-        });
-        elder.forEach(elder => {
-            let time = elder['time'];
-            categoryData.push(new Date(time).toLocaleDateString("en-US"));
-            ohlcData.push(ohlcObj[time]);
-            elderData.push({
-                value: ohlcObj[time],
-                itemStyle: {
-                    color: colors[elder['color']],
-                    color0: colors[elder['color']],
-                    borderColor: '#555',
-                    borderColor0: '#555',
-                },
-            });
-        });
-        return {
-            categoryData,
-            elderData,
-            ohlcData,
-        };
     }
 
     function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
@@ -176,29 +129,6 @@ $(document).ready(function() {
             macd.pop();
         }
 
-        /*ohlc_min = JSON.parse(localStorage.getItem('ohlc_min'));
-
-        if (timeStamp_min(ohlc_min[0].time) !== timeStamp_min(ohlc_new.time)) {
-            fetch('insert', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    time: ohlc_new.time,
-                    symbol: 'spy',
-                    close: ohlc_new.close,
-                    color: ohlc[0].color
-                })              
-            }).then(res => {
-                if (res === 'ok') {
-                    ohlc_min = [ohlc_new, ...ohlc_min];
-                    ohlc_min.pop();
-                    localStorage.setItem('ohlc_min', JSON.stringify(ohlc_min));
-                }
-            })
-        }
-        */
         localStorage.setItem('ohlc', JSON.stringify(ohlc));
         localStorage.setItem('ema', JSON.stringify(ema));
         localStorage.setItem('macd', JSON.stringify(macd));
@@ -287,9 +217,6 @@ $(document).ready(function() {
     const timeStamp_day = time => 
         time.substr(0, 10);
     
-    const timeStamp_min = time => 
-        time.substr(0, 16);
-
     function init() {
         console.log('Main script executed');
         const chartEls = document.getElementsByClassName('chart');
@@ -306,23 +233,90 @@ $(document).ready(function() {
             charts.push({ chart, symbol });
         }
 
-        fetch(`data?type=elder&symbol=spy&cond=all`)
+        charts.forEach(async ({ chart, symbol }) => {            
+            const option = {
+                ...defaultOptions,
+                title: {
+                    text: symbol,
+                },
+                xAxis: {
+                    type: 'category',
+                    data: [],
+                    scale: true,
+                    boundaryGap: false,
+                    axisLine: { onZero: false, lineStyle: { color: '#8392A5' } },
+                    splitNumber: 20,
+                    min: 'dataMin',
+                    max: 'dataMax',
+                },
+                series: [
+                    {
+                        name: 'Elder',
+                        type: 'candlestick',
+                        data: [],
+                    },
+                    {
+                        name: 'EMA13',
+                        type: 'line',
+                        data: [],
+                        // smooth: true,
+                        lineStyle: {
+                            normal: { opacity: 0.5, color: '#1d528b' },
+                        },
+                        showSymbol: false,
+                    },
+                ],
+            };
+
+            chart.setOption(option, true);
+            chart.hideLoading();
+        });
+
+        const images = [];
+        const e_chartEls = document.getElementsByClassName('chart');
+        for (let chartEl of e_chartEls) {
+            let symbol = chartEl.getAttribute('symbol');
+            let canvas = chartEl.querySelector('canvas');
+            images.push({ symbol, url: canvas.toDataURL() });
+        }
+
+        fetch('drawing', {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(images)
+        })
             .then(response => response.json())
-            .then(data => {     
+            .then(data => {
+                if (data.res === 'ok') {
+                    charts.forEach(async ({ chart, symbol }) => {            
+                        chart.showLoading({
+                            text: 'Loading graph. Please wait',
+                        });
+                        chart.setOption(null, true);
+                        chart.hideLoading();
+                    });
 
-                const ohlcToStore = JSON.stringify(data.ohlc);
-                const emaToStore = JSON.stringify(data.ema);
-                const macdToStore = JSON.stringify(data.macd);
-                const elderToStore = JSON.stringify(data.elder);
+                    fetch(`data?type=elder&symbol=spy&cond=all`)
+                        .then(response => response.json())
+                        .then(data => {     
 
-                localStorage.setItem('ohlc', ohlcToStore);
-                localStorage.setItem('ema', emaToStore);
-                localStorage.setItem('macd', macdToStore);
-                localStorage.setItem('elder', elderToStore);
-                
-                updateData();
-                setInterval(updateData, 40000); 
-            })               
+                            const ohlcToStore = JSON.stringify(data.ohlc);
+                            const emaToStore = JSON.stringify(data.ema);
+                            const macdToStore = JSON.stringify(data.macd);
+                            const elderToStore = JSON.stringify(data.elder);
+
+                            localStorage.setItem('ohlc', ohlcToStore);
+                            localStorage.setItem('ema', emaToStore);
+                            localStorage.setItem('macd', macdToStore);
+                            localStorage.setItem('elder', elderToStore);
+                            
+                            updateData();
+                            setInterval(updateData, 40000); 
+                        })
+                }
+            })                         
     }
     init();
 });

@@ -10,7 +10,7 @@ const port = process.env.GRAPH_SERVER_PORT || 8080;
 
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get('/', async function(req, res) {
     let result = await controller.getHTML();
@@ -34,8 +34,9 @@ app.get('/data', async function(req, res) {
     res.send(result);
 });
 
-app.post('/insert', async function(req, res) {
-    let result = await controller.WriteOneData(req.body);   
+app.post('/drawing', async function(req, res) {
+    let result = await controller.makeEmptyGraph(req.body);
+
     res.setHeader('Content-Type', 'application/json');
     res.send(result);
 });
