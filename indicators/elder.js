@@ -3,7 +3,7 @@ const { getRecentEMA, getRecentMACD, getRecentTick } = require('../api');
 const { getExistingData } = require('../db/db-helper');
 
 const { convertTimeframe, timeStamp_day, elder } = require('../graph/controller/assist');
-const elder_min = require('./elder_min');
+const elder_min = require('./assist');
 
 function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
     let color = 'Blue';
@@ -63,6 +63,7 @@ module.exports = {
                     if (ex_stamp !== timeStamp_day(element.time)) {                        
                         if (ex_stamp !== '') {
                             process_day_data.push(convertTimeframe(temp_array));
+                            if (index === ohlc.length - 1) process_day_data.push(element);
                             ex_stamp = timeStamp_day(element.time);
                             temp_array = [];
                             temp_array.push(element);
@@ -72,7 +73,7 @@ module.exports = {
                         }
                     } else {
                         temp_array.push(element);
-                        if (index === ohlc.length -1) process_day_data.push(convertTimeframe(temp_array));
+                        if (index === ohlc.length - 1) process_day_data.push(convertTimeframe(temp_array));
                     }
                 });
             

@@ -1,114 +1,94 @@
-const ma_period=13;          // Period of MA
-const fast_ema_period = 12;  // MACD fast period 
-const slow_ema_period = 26;  // MACD slow period
-const signal_period=9;       // MACD signal period
+const { insertData } = require('../db/models/dynamic');
+const { getRecentEMA, getRecentMACD, getRecentTick } = require('../api');
+const { getExistingData } = require('../db/db-helper');
 
-const timeStamp_day = time => 
-    time.toUTCString().slice(0, 17);
+const { convertTimeframe, timeStamp_day, elder } = require('../graph/controller/assist');
 
-const elder_min = (data, elder_color) => {
- 
-    const limit = data.length;     
-
-    var elder = [];
-
-    var rates_total = limit, prev_calculated = 0;
-    
-    var Price = data
-        .slice()
-        .reverse()
-        .map(({close}) => +close);
-        
-    var MA = ExponentialMAOnBuffer(rates_total,prev_calculated,0,ma_period,Price);
-    var FASTMACD = ExponentialMAOnBuffer(rates_total,prev_calculated,0,fast_ema_period,Price);
-    var SLOWMACD = ExponentialMAOnBuffer(rates_total,prev_calculated,0,slow_ema_period,Price);
-    var MACDM = [];
-    for(var i= 0; i < limit; i++) MACDM[i]=FASTMACD[i]-SLOWMACD[i];
-
-    var MACDS = SimpleMAOnBuffer(rates_total,prev_calculated,0,signal_period,MACDM);
-
-    var begin = slow_ema_period;
-    var ohlc_color = data.slice().reverse();
-    var ohlc = data;
-    for (var bar = begin; bar < elder_color.length; bar++) {        
-        const pos1 = ohlc_color.findIndex(e => timeStamp_day(e.time) === timeStamp_day(elder_color[bar].time));
-        const pos2 = ohlc.findIndex(e => timeStamp_day(e.time) === timeStamp_day(elder_color[bar].time));       
-        for (var j = pos1; j <= ohlc.length - pos2 - 1; j++) {
-            Price[bar]     = ohlc_color[j].close;
-            MA[bar]        = ExponentialMA(ma_period,MA[bar-1],Price[bar]);
-            FASTMACD[bar]  = ExponentialMA(fast_ema_period,FASTMACD[bar-1],Price[bar]);
-            SLOWMACD[bar]  = ExponentialMA(slow_ema_period,SLOWMACD[bar-1],Price[bar]);
-            MACDM[bar]     = FASTMACD[bar]-SLOWMACD[bar];
-            MACDS[bar]     = SimpleMA(bar,signal_period,MACDS[bar-1],MACDM);                
-            
-            var dma     = MA[bar]-MA[bar-1];
-            var dmacd0  = MACDM[bar]-MACDS[bar];
-            var dmacd1  = MACDM[bar-1]-MACDS[bar-1];
-            var color = '';
-            if (dma>0 && dmacd0 > dmacd1 && dmacd0>0) color = 'Green'; // Green
-            else if(dma<0 && dmacd0 < dmacd1 && dmacd0<0) color = 'Red'; // Red
-            else color = 'Blue';
-            elder.push({
-                time: ohlc_color[j].time,
-                symbol: 'spy',
-                price: ohlc_color[j].close,
-                color: color
-            })
-        }
+function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
+    let color = 'Blue';
+    if (currentEMA > prevEMA && currentMACD > prevMACD) {
+        color = 'Green';
     }
-    return elder.reverse();
+    if (currentEMA < prevEMA && currentMACD < prevMACD) {
+        color = 'Red';
+    }
+    // console.log(currentEMA, prevEMA, currentMACD, prevMACD, color);
+    return color;
 }
 
- 
-function SimpleMA(position, period, prev_value, price)
-{
-    const result= prev_value +(price[position]-price[position-period])/period;;
-    return result;
-}
 
-function ExponentialMA(period, prev_value, price)
-{
-    var pr=2.0/(period+1.0);
-    const result=price*pr+prev_value*(1-pr);
-    return result;
-}
+module.exports = {
+    insertData: async (data, symbol) => {
+        return await insertData({ data, modelName: `${symbol}_elder`, type: 'elder' });
+    },
+    getData: {
+        api: async symbol => {
+            const [EMA, MACD, DATA] = await Promise.all([
+                getRecentEMA({ symbol }),
+                getRecentMACD({ symbol }),
+                getRecentTick({ symbol }),
+            ]);
 
-function SimpleMAOnBuffer(rates_total, prev_calculated, begin, period, price)
-{
-    var buffer = [];
-    var limit=period+begin;
+            let dbRows = [
+                {
+                    time: DATA[0].time,
+                    symbol,
+                    price: DATA[0].close,
+                    color: getPriceBarColor({
+                        currentEMA: EMA[0],
+                        prevEMA: EMA[1],
+                        currentMACD: MACD[0],
+                        prevMACD: MACD[1],
+                    }),
+                },
+            ];
+            return dbRows;
+        },
+        db: async symbol => {
+            const ohlc = await getExistingData({ type: 'ohlc', modelName: symbol });
+            console.log('Total no of ohlcRows: ', ohlc.length);
 
-    for(var i=0;i<limit-1;i++) buffer[i]=0.0;
-    
-    var firstValue=0;
-    for(var i=begin;i<limit;i++)
-        firstValue+=price[i];
-    firstValue/=period;
-    buffer[limit-1]=firstValue;
+            // technical indicators library expects the earliest data first. Thus reversing the data order. Only used for library
 
-   for(var i=limit;i<rates_total;i++)
-      buffer[i]=buffer[i-1]+(price[i]-price[i-period])/period;
+            var process_day_data = [];
+            var ex_stamp = '';
+            var temp_array = [];
+            var result_min_elder = [];
 
-    return buffer;
-}
+            ohlc
+                .slice()
+                .reverse()
+                .map(( element, index ) => {
+                    if (ex_stamp !== timeStamp_day(element.time)) {
+                        if (ex_stamp !== '') {
+                            process_day_data.push(convertTimeframe(temp_array));
+                            ex_stamp = timeStamp_day(element.time);
+                            temp_array = [];
+                            temp_array.push(element);
+                            if (index === ohlc.length - 1) process_day_data.push(convertTimeframe(temp_array));
+                            
+                        } else {
+                            ex_stamp = timeStamp_day(element.time);
+                            temp_array.push(element);
+                        }
+                    } else {
+                        temp_array.push(element);
+                        if (index === ohlc.length - 1) {
+                            process_day_data.push(convertTimeframe(temp_array));
+                        }
+                    }
+                });
 
-function ExponentialMAOnBuffer(rates_total, prev_calculated, begin, period, price)
-{
-    var buffer = [];    
-    var dSmoothFactor=2.0/(1.0+period); 
-
-    var limit=period+begin;
-
-    for(var i=0;i<begin;i++) buffer[i]=0.0;
-    buffer[begin]=price[begin];
-
-    for(var i=begin+1;i<limit;i++)
-        buffer[i]=price[i]*dSmoothFactor+buffer[i-1]*(1.0-dSmoothFactor);
-   
-   for(var i=limit;i<rates_total;i++)
-      buffer[i]=price[i]*dSmoothFactor+buffer[i-1]*(1.0-dSmoothFactor);
-
-    return buffer;
-}
-
-module.exports = elder_min;
+                ohlc
+                .slice()
+                .reverse()
+                .map(element => {
+                    const index = process_day_data.findIndex(e => timeStamp_day(e.time) === timeStamp_day(element.time));
+                    const temp_data = [...process_day_data.slice(0, index + 1), element];
+                    result_min_elder = [...result_min_elder, elder(temp_data.reverse()).elder[0]];
+                });
+                
+            return result_min_elder.reverse();
+        },
+    },
+};
