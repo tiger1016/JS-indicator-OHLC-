@@ -29,6 +29,18 @@ const convertTimeframe = input => {
     };
 }
 
+function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
+    let color = 'Blue';
+    if (currentEMA > prevEMA && currentMACD > prevMACD) {
+        color = 'Green';
+    }
+    if (currentEMA < prevEMA && currentMACD < prevMACD) {
+        color = 'Red';
+    }
+    
+    return color;
+}
+
 const elder = data => {
     const values = data
         .slice()
@@ -65,26 +77,79 @@ const elder = data => {
     return { ema, macd, elder };
 }
 
-function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
-    let color = 'Blue';
-    if (currentEMA > prevEMA && currentMACD > prevMACD) {
-        color = 'Green';
-    }
-    if (currentEMA < prevEMA && currentMACD < prevMACD) {
-        color = 'Red';
-    }
-    
-    return color;
-}
-
-
 const timeStamp_day = time => 
     time.toUTCString().slice(0, 17);
 
+const colorsForday = ohlc => {
+    var process_day_data = [];
+    var ex_stamp = '';
+    var temp_array = [];
+
+    ohlc
+        .slice()
+        .reverse()
+        .map(( element, index ) => {
+            if (ex_stamp !== timeStamp_day(element.time)) {
+                if (ex_stamp !== '') {
+                    process_day_data.push(convertTimeframe(temp_array));
+                    ex_stamp = timeStamp_day(element.time);
+                    temp_array = [];
+                    temp_array.push(element);
+                    if (index === ohlc.length - 1) process_day_data.push(convertTimeframe(temp_array));
+                    
+                } else {
+                    ex_stamp = timeStamp_day(element.time);
+                    temp_array.push(element);
+                }
+            } else {
+                temp_array.push(element);
+                ex_stamp = timeStamp_day(element.time);
+                if (index === ohlc.length - 1) {
+                    process_day_data.push(convertTimeframe(temp_array));
+                }
+            }
+        });
+        
+    var min_elder = [];
+    ohlc
+        .slice()
+        .reverse()
+        .map(element => {
+            var temp_data = [];
+            const index = process_day_data.findIndex(e => timeStamp_day(e.time) === timeStamp_day(element.time));
+            if (ex_stamp === timeStamp_day(element.time)) {
+                temp_data = [...process_day_data.slice(0, index), element];
+            } else {
+                temp_data = [...process_day_data.slice(0, index + 1), element];
+            }
+            const dataForCheck = elder(temp_data.reverse()).elder[0];
+            if (typeof dataForCheck !== "undefined") {
+                min_elder = [...min_elder, dataForCheck];
+            }
+        });
+
+    return { ex_stamp, process_day_data, min_elder };
+}
+
+const getColorsForday = elder => {
+    var ex_stamp = timeStamp_day(elder[0].time);
+    const elder_res = [];
+
+    for (var i = 0; i < elder.length; i ++) {
+        if (timeStamp_day(elder[i].time) !== ex_stamp) {
+            elder_res.push(element[i - 1]);
+            ex_stamp = timeStamp_day(elder[i].time);
+        }
+    }
+    elder_res.push(elder[elder.length - 1]);
+    return elder_res;
+}
 
 module.exports = {
     timeStamp_day,
     convertTimeframe,
     elder,
-    getPriceBarColor
+    getPriceBarColor,
+    colorsForday,
+    getColorsForday,
 }

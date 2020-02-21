@@ -1,8 +1,9 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
+const { sequelize_ohlc, sequelize_elder } = require('../sequelize');
+
 let models = {
     ohlc: modelName => {
-        return sequelize.define(modelName, {
+        return sequelize_ohlc.define(modelName, {
             open: DataTypes.DOUBLE,
             high: DataTypes.DOUBLE,
             low: DataTypes.DOUBLE,
@@ -11,29 +12,11 @@ let models = {
         });
     },
     elder: modelName => {
-        return sequelize.define(modelName, {
+        return sequelize_elder.define(modelName, {
             time: { type: DataTypes.DATE, primaryKey: true },
             symbol: DataTypes.STRING,
             price: DataTypes.DOUBLE,
             color: DataTypes.STRING,
-        });
-    },
-    rsi: modelName => {
-        return sequelize.define(modelName, {
-            time: { type: DataTypes.DATE, primaryKey: true },
-            symbol: DataTypes.STRING,
-            price: DataTypes.DOUBLE,
-            rsi: DataTypes.DOUBLE,
-        });
-    },
-    sma: modelName => {
-        return sequelize.define(modelName, {
-            time: { type: DataTypes.DATE, primaryKey: true },
-            symbol: DataTypes.STRING,
-            price: DataTypes.DOUBLE,
-            sma30: DataTypes.DOUBLE,
-            sma50: DataTypes.DOUBLE,
-            value: DataTypes.DOUBLE,
         });
     },
 };
@@ -43,7 +26,7 @@ function getModel({ type, modelName }) {
     if (!modelFn) {
         throw `Model:${modelName} not found`;
     }
-    let model = modelFn(modelName);
+    let model = modelFn(modelName);    
     model.removeAttribute('id');
     model.sync();
     return model;

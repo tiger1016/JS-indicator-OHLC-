@@ -44,7 +44,23 @@ $(document).ready(function() {
                 y: '90%',
             },
         ],
-    };   
+    };
+
+    function calculateMA(data, dayCount) {
+        let result = [];
+        for (let i = 0, len = data.length; i < len; i++) {
+            if (i < dayCount) {
+                result.push('-');
+                continue;
+            }
+            let sum = 0;
+            for (let j = 0; j < dayCount; j++) {
+                sum += +data[i - j][1];
+            }
+            result.push(sum / dayCount);
+        }
+        return result;
+    }
 
     function calculateEMA(data, dayCount) {
         let result = [];
@@ -65,82 +81,16 @@ $(document).ready(function() {
         return result;
     }
 
-    function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
-        let color = 'Blue';
-        if (currentEMA > prevEMA && currentMACD > prevMACD) {
-            color = 'Green';
-        }
-        if (currentEMA < prevEMA && currentMACD < prevMACD) {
-            color = 'Red';
-        }
+    async function getOneData({ symbol }) {
+        const data = await (await fetch(`data?type=elder&symbol=${symbol}&cond=one`)).json();
         
-        return color;
-    }
+        let store = JSON.parse(localStorage.getItem('store'));
+        store[symbol].ohlc = [...store[symbol].ohlc, ...data.ohlc];
+        store[symbol].elder = [...store[symbol].elder, ...data.elder];
+        localStorage.setItem('store', JSON.stringify(store));
 
-    async function dataProcess(ohlc_new) {
-        ohlc = JSON.parse(localStorage.getItem('ohlc'));
-        ema = JSON.parse(localStorage.getItem('ema'));
-        macd = JSON.parse(localStorage.getItem('macd'));
-        elder = JSON.parse(localStorage.getItem('elder'));
-
-        const dayCount = 13;
-        const multiplier = 2 / (dayCount + 1);
-      
-        if (timeStamp_day(ohlc[0].time) === timeStamp_day(ohlc_new.time)) {
-            ohlc[0].time = ohlc_new.time;
-            ohlc[0].close = ohlc_new.close;
-            ohlc[0].high = Math.max(ohlc[0].high, parseInt(ohlc_new.high));
-            ohlc[0].low = Math.min(ohlc[0].low, parseInt(ohlc_new.low));
-
-            ema[0] = ohlc_new.close * multiplier + ema[0] * (1 - multiplier);
-
-            macd[0] = macd[0] + ohlc_new.close - ohlc[dayCount - 1].close;
-
-            elder[0] = {
-                time: ohlc_new.time,
-                symbol: 'spy',
-                price: ohlc_new.close,
-                color: getPriceBarColor({
-                    currentEMA: ema[0],
-                    prevEMA: ema[1],
-                    currentMACD: macd[0],
-                    prevMACD: macd[1],
-                }),
-            };
-        } else {            
-            ema = [ohlc_new.close * multiplier + ema[0] * (1 - multiplier), ...ema];
-
-            macd = [macd[0] + ohlc_new.close - ohlc[dayCount - 1].close, ...macd];
-
-            elder = [{
-                time: ohlc_new.time,
-                symbol: 'spy',
-                price: ohlc_new.close,
-                color: getPriceBarColor({
-                    currentEMA: ema[0],
-                    prevEMA: ema[1],
-                    currentMACD: macd[0],
-                    prevMACD: macd[1],
-                }),
-            }, ...elder];
-
-            ohlc = [ohlc_new, ...ohlc];
-            ema.pop();
-            macd.pop();
-        }
-
-        localStorage.setItem('ohlc', JSON.stringify(ohlc));
-        localStorage.setItem('ema', JSON.stringify(ema));
-        localStorage.setItem('macd', JSON.stringify(macd));
-        localStorage.setItem('elder', JSON.stringify(elder));
-
-        return { ohlc: ohlc.reverse(), elder: elder.reverse() };
-    }
-
-    async function getUpdatedData() {
-        const ohlc_new = await (await fetch(`data?type=elder&symbol=spy&cond=one`)).json();
+        let { ohlc, elder } = store[symbol];
         
-        const { ohlc, elder } = await dataProcess(ohlc_new);
         let ohlcObj = {};
         let ohlcData = [];
         let categoryData = [];
@@ -174,7 +124,7 @@ $(document).ready(function() {
             chart.showLoading({
                 text: 'Loading graph. Please wait',
             });
-            const data = await getUpdatedData();
+            const data = await getOneData({ symbol });
             const option = {
                 ...defaultOptions,
                 title: {
@@ -214,15 +164,12 @@ $(document).ready(function() {
         });
     }
 
-    const timeStamp_day = time => 
-        time.substr(0, 10);
-    
     function init() {
         console.log('Main script executed');
         const chartEls = document.getElementsByClassName('chart');
-        let symbol;
+
         for (let chartEl of chartEls) {
-            symbol = chartEl.getAttribute('symbol');
+            let symbol = chartEl.getAttribute('symbol');
             let chart = echarts.init(chartEl);
 
             $(window).on('resize', function() {
@@ -233,90 +180,18 @@ $(document).ready(function() {
             charts.push({ chart, symbol });
         }
 
-        charts.forEach(async ({ chart, symbol }) => {            
-            const option = {
-                ...defaultOptions,
-                title: {
-                    text: symbol,
-                },
-                xAxis: {
-                    type: 'category',
-                    data: [],
-                    scale: true,
-                    boundaryGap: false,
-                    axisLine: { onZero: false, lineStyle: { color: '#8392A5' } },
-                    splitNumber: 20,
-                    min: 'dataMin',
-                    max: 'dataMax',
-                },
-                series: [
-                    {
-                        name: 'Elder',
-                        type: 'candlestick',
-                        data: [],
-                    },
-                    {
-                        name: 'EMA13',
-                        type: 'line',
-                        data: [],
-                        // smooth: true,
-                        lineStyle: {
-                            normal: { opacity: 0.5, color: '#1d528b' },
-                        },
-                        showSymbol: false,
-                    },
-                ],
-            };
+        charts.forEach(async ({ symbol }) => {
+            const data = await (await fetch(`data?type=elder&symbol=${symbol}&cond=all`)).json();
 
-            chart.setOption(option, true);
-            chart.hideLoading();
-        });
+            let store = {};
+            store[symbol] = data;
 
-        const images = [];
-        const e_chartEls = document.getElementsByClassName('chart');
-        for (let chartEl of e_chartEls) {
-            let symbol = chartEl.getAttribute('symbol');
-            let canvas = chartEl.querySelector('canvas');
-            images.push({ symbol, url: canvas.toDataURL() });
-        }
-
-        fetch('drawing', {
-            method: 'POST',
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(images)
+            localStorage.setItem('store', JSON.stringify(store));
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.res === 'ok') {
-                    charts.forEach(async ({ chart, symbol }) => {            
-                        chart.showLoading({
-                            text: 'Loading graph. Please wait',
-                        });
-                        chart.setOption(null, true);
-                        chart.hideLoading();
-                    });
-
-                    fetch(`data?type=elder&symbol=spy&cond=all`)
-                        .then(response => response.json())
-                        .then(data => {     
-
-                            const ohlcToStore = JSON.stringify(data.ohlc);
-                            const emaToStore = JSON.stringify(data.ema);
-                            const macdToStore = JSON.stringify(data.macd);
-                            const elderToStore = JSON.stringify(data.elder);
-
-                            localStorage.setItem('ohlc', ohlcToStore);
-                            localStorage.setItem('ema', emaToStore);
-                            localStorage.setItem('macd', macdToStore);
-                            localStorage.setItem('elder', elderToStore);
-                            
-                            updateData();
-                            setInterval(updateData, 40000); 
-                        })
-                }
-            })                         
+        
+        updateData();
+        setInterval(updateData, 60000);
     }
+
     init();
 });

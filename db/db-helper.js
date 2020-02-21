@@ -14,30 +14,7 @@ async function getExistingData({ type, modelName, limit = 50000, order = 'DESC' 
     }
 }
 
-async function getNewData({ type, modelName }) {
-    try {
-        const model = dynamicModel.getModel({ type, modelName });
-        const config = {
-            order: [['time', 'DESC']],
-            raw: true
-        };
-        return model.findOne(config);
-    } catch (err) {
-        console.log(err);
-    }
-}
 
-async function insertOneData({ data, modelName, type }) {
-    try {
-        const model = dynamicModel.getModel({ type, modelName });
-        model.upsert(data);
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-module.exports = { 
-    getExistingData,
-    getNewData,
-    insertOneData
+module.exports = {
+    getExistingData
 };
