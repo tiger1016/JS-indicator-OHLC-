@@ -1,0 +1,16 @@
+{
+    "ohlc": {
+        "DB_HOST": "71.237.171.150",
+        "DB_USER": "admin",
+        "DB_PASS": "4j3ZSZVD5AQauxad",
+        "DB_NAME": "1m"
+    },
+    "elder": {
+        "DB_HOST": "71.237.171.150",
+        "DB_USER": "admin",
+        "DB_PASS": "4j3ZSZVD5AQauxad",
+        "DB_NAME": "1mEx"
+    },
+    "API_KEY": "Z7E3IL5QHRKNTMMF",
+    "GRAPH_SERVER_PORT": "8020"
+}

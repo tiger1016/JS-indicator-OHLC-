@@ -1,16 +1,35 @@
+const { insertData } = require('../../db/models/dynamic');
+
 const { JSDOM } = require('jsdom');
 const fs = require('fs');
+const util = require('util');
 const path = require('path');
-const symbols = require('../symbols').symbols;
-const { getExistingData, getNewData, insertOneData } = require('../../db/db-helper');
+const { getExistingData } = require('../../db/db-helper');
 const baseHTML = fs.readFileSync(path.join(__dirname, `../html/index.html`), 'utf8');
 const os = require('os');
 const puppeteer = require('puppeteer');
 var graphsDir = path.join(__dirname, `../../output`);
-const { convertTimeframe, timeStamp_day, elder } = require('./assist');
+const {
+    timeStamp_day,
+    elder,
+    colorsForday,
+    getColorsForday,
+} = require('./assist');
 
-function getHTML() {
+var gStore = {};
+
+const pos = "./config/readSymbols.txt";
+var symbols = [];
+
+const readFile = (fileName) => util.promisify(fs.readFile)(fileName, 'utf8');
+
+async function getHTML() {
     const dom = new JSDOM(baseHTML);
+
+    const data = await readFile(pos);
+    
+    symbols = data.split("\r\n");
+      
     let graphs = symbols.map(symbol => {
         let node = dom.window.document.createElement('div');
         node.id = symbol;
@@ -19,6 +38,7 @@ function getHTML() {
         node.className = 'chart';
         return node;
     });
+
     const parent = dom.window.document.getElementById('charts');
     while (parent.firstChild) {
         parent.firstChild.remove();
@@ -28,14 +48,25 @@ function getHTML() {
     return dom.serialize();
 }
 
-async function getData(options) {
+async function getAllData(options) {
     const { type, symbol } = options;
     let result;
     switch (type) {
         case 'elder':
-            const ohlc = await getExistingData({ type: 'ohlc', modelName: symbol, order:'ASC' });
-            const elder = await getExistingData({ type: 'elder', modelName: `${symbol}_elder`, order:'ASC' });
-            result = { ohlc, elder };
+            const ohlc = await getExistingData({ type: 'ohlc', modelName: symbol });
+
+            if (ohlc.length === 0) {
+                result = { ohlc: [], elder: [] };
+            } else {
+                const data = colorsForday(ohlc, symbol);
+                if (data.min_elder.length !== elder.length) {
+                    insertData({ data: data.min_elder, modelName: `${symbol}_elder`, type: 'elder' });
+                }
+                const colorsOfelder = getColorsForday(data.min_elder);
+                result = { ohlc: data.process_day_data, elder: colorsOfelder };
+                const check = data.min_elder.length === 0 ? true : false;
+                gStore[symbol] = { ex_stamp: data.ex_stamp, process_day_data: data.process_day_data, colorsOfelder, elderFlag: check };
+             }
 
             break;
         default:
@@ -44,49 +75,124 @@ async function getData(options) {
     return result;
 }
 
-async function getAllData(options) {
-    const { symbol } = options;
-    const ohlc = await getExistingData({ type: 'ohlc', modelName: symbol});
+const dataOnlineProcess = (new_ohlc, symbol) => {
+    let process_day_data = [...gStore[symbol].process_day_data];
+    let ex_stamp = gStore[symbol].ex_stamp;
 
-    var process_day_data = [];
-    var ex_stamp = '';
-    var temp_array = [];
-
-    ohlc
+    new_ohlc
         .slice()
         .reverse()
-        .map(( element, index ) => {
-            if (ex_stamp !== timeStamp_day(element.time)) {                        
-                if (ex_stamp !== '') {
-                    process_day_data.push(convertTimeframe(temp_array));
-                    if (index === ohlc.length - 1) process_day_data.push(element);
-                    ex_stamp = timeStamp_day(element.time);
-                    temp_array = [];
-                    temp_array.push(element);
-                } else {
-                    ex_stamp = timeStamp_day(element.time);
-                    temp_array.push(element);
-                }
+        .map( (element) => {
+            if (ex_stamp !== timeStamp_day(element.time)) {
+                ex_stamp = timeStamp_day(element.time);
+                process_day_data.push(element);
             } else {
-                temp_array.push(element);
-                if (index === ohlc.length - 1) process_day_data.push(convertTimeframe(temp_array));
+                var temp = process_day_data.pop();
+                temp.time = element.time;
+                temp.high = Math.max(temp.high, element.high);
+                temp.low = Math.min(temp.low, element.low);
+                temp.close = element.close;
+                process_day_data.push(temp);
+                ex_stamp = timeStamp_day(element.time);
             }
         });
-    
-    const result = elder(process_day_data.reverse());
 
-    return { ohlc: process_day_data, elder: result.elder, ema: result.ema.slice(0, 20), macd: result.macd.slice(0, 20) };
+    let min_elder = [];
+
+    new_ohlc
+        .slice()
+        .reverse()
+        .map(element => {
+            let temp_data = [];
+            const index = process_day_data.findIndex(e => timeStamp_day(e.time) === timeStamp_day(element.time));
+            if (ex_stamp === timeStamp_day(element.time)) {
+                temp_data = [...process_day_data.slice(0, index), element];
+            } else {
+                temp_data = [...process_day_data.slice(0, index + 1), element];
+            }
+            min_elder = [...min_elder, elder(temp_data.reverse(), symbol).elder[0]];
+        });
+        
+    return { ex_stamp, process_day_data, min_elder };
 }
 
 async function getOneData(options) {
-    const { symbol } = options;
-    const ohlc = await getNewData({ type: 'ohlc', modelName: symbol });
-    return ohlc;
-}
+    const { type, symbol } = options;
+    let result;
 
-async function WriteOneData(data) {
-    insertOneData({type: 'elder', modelName: 'spy_elder', data})
-    return 'ok';
+    switch (type) {
+        case 'elder':
+            if (typeof gStore[symbol] === 'object') {       
+
+                if (gStore[symbol].elderFlag === true) {
+                    const ohlc = await getExistingData({ type: 'ohlc', modelName: symbol });          
+                    const data = colorsForday(ohlc, symbol);                
+                    insertData({ data: data.min_elder, modelName: `${symbol}_elder`, type: 'elder' });
+                
+                    const colorsOfelder = getColorsForday(data.min_elder);
+                    result = { ohlc: data.process_day_data, elder: colorsOfelder };
+                    const check = data.min_elder.length === 0 ? true : false;
+                    gStore[symbol] = { ex_stamp: data.ex_stamp, process_day_data: data.process_day_data, colorsOfelder, elderFlag: check };
+                } else {
+                    const ohlc_new = await getExistingData({ type: 'ohlc', modelName: symbol, limit: 5 });
+   
+                     const data_updated =  dataOnlineProcess(ohlc_new, symbol);
+                     const min_elder = data_updated.min_elder;
+
+           // -------------  database---------------
+                    insertData({ data: min_elder.slice().reverse(), modelName: `${symbol}_elder`, type: 'elder' });
+   
+   
+       //     ----------    min_elder -------->>>>>>   daily_elder       --------------
+   
+                    const day_elder = [...gStore[symbol].colorsOfelder];
+                    const last_Elder = day_elder[day_elder.length-1];
+
+                    min_elder
+                    .slice()
+                    .map(element => {
+                        let temp_elder = day_elder[day_elder.length-1];
+                        if(timeStamp_day(element.time) === timeStamp_day(temp_elder.time)){
+                            day_elder.pop();
+                            day_elder.push(element)
+                        }else{
+                            day_elder.push(element);
+                        }
+                    })
+   
+        //      finding changed daily_elder
+
+                    const e_index = day_elder.findIndex(element => timeStamp_day(element.time) === timeStamp_day(last_Elder.time)  );
+                    const changed_elder = day_elder.slice(e_index, day_elder.length);//return data   including same day and nex day  
+                    
+   
+   
+            ////           ---   ----     changed process_day_data   -------------
+   
+                    const old_process = [...gStore[symbol].process_day_data];
+                    
+                    const last_process = old_process[old_process.length-1];//previous top
+                    
+                    //finding changed process_day_data
+                    const updated_process = data_updated.process_day_data;
+
+                    const p_index = updated_process.findIndex(element => timeStamp_day(element.time) === timeStamp_day(last_process.time));
+                    const changed_process = updated_process.slice(p_index, updated_process.length);
+
+                    result = { ohlc: changed_process, elder: changed_elder};
+    
+                    gStore[symbol].process_day_data = updated_process;
+        
+                    gStore[symbol].ex_stamp = data_updated.ex_stamp;
+                    gStore[symbol].colorsOfelder = day_elder;    
+                }                 
+            }
+            
+            break;
+        default: result = []; break;
+    }
+    
+    return result;
 }
 
 async function makeGraph() {
@@ -132,8 +238,7 @@ async function makeGraph() {
     return images.map(({ symbol }) => symbol);
 }
 
-
-async function makeEmptyGraph(images) {
+async function makeOnlineGraph(images) {
     // first make sure the folder exists
     if (!fs.existsSync(graphsDir)) {
         fs.mkdirSync(graphsDir);
@@ -147,16 +252,13 @@ async function makeEmptyGraph(images) {
             err
         ) {});
     });
-    return { res: 'ok' };
 }
 
 
 module.exports = {
     getHTML,
     makeGraph,
-    getData,
     getAllData,
     getOneData,
-    WriteOneData,
-    makeEmptyGraph,
+    makeOnlineGraph,
 };

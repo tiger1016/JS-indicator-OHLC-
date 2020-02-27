@@ -24,3 +24,26 @@ npm start -- --symbol="SPY" --type="elder" --action="api"
 npm start -- --symbol="SPY" --type="rsi" --action="db"
 
 Db and api-key config is stored in the .env file.
+
+///////////////////////////////////////////////////
+Here is the commands:
+
+spec: symbol might be spy, dia, qqq ....
+
+    npm start -- --symbol="spy" --type="elder" --action="db"
+
+All update: 
+    npm start -- --symbol="all" --type="elder" --action="db"
+    
+Graph display and output saving:
+
+    npm run start-graph-server
+
+
+If you want to run with symbols-file, then please Input all symbols you want into "/config/readSymbols.txt" file, like as below:
+
+                                                spy
+                                                dia
+                                                qqq
+                                                ppp
+                                                ......
