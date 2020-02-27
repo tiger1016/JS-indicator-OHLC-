@@ -45,22 +45,6 @@ $(document).ready(function() {
         ],
     };
 
-    function calculateMA(data, dayCount) {
-        let result = [];
-        for (let i = 0, len = data.length; i < len; i++) {
-            if (i < dayCount) {
-                result.push('-');
-                continue;
-            }
-            let sum = 0;
-            for (let j = 0; j < dayCount; j++) {
-                sum += +data[i - j][1];
-            }
-            result.push(sum / dayCount);
-        }
-        return result;
-    }
-
     function calculateEMA(data, dayCount) {
         let result = [];
         const multiplier = 2 / (dayCount + 1);
@@ -84,12 +68,12 @@ $(document).ready(function() {
         const data = await (await fetch(`data?type=elder&symbol=${symbol}&cond=one`)).json();
         console.log(`get One Data `)
         
+        console.log(data);
+
         const ohlc_data=[...data.ohlc];
         const elder_data=[...data.elder];
 
-       const store = JSON.parse(localStorage.getItem('store'));
-        
-        console.log(store[symbol]);
+       const store = JSON.parse(localStorage.getItem('store'));       
     
         if (store[symbol].elder.length === 0) {
             if (elder_data.length !== 0) {
@@ -100,10 +84,12 @@ $(document).ready(function() {
             store[symbol].ohlc.pop();
             store[symbol].elder.pop();
        
-            store[symbol].ohlc = [...store[symbol].ohlc, ...ohlc_data];
-            store[symbol].elder = [...store[symbol].elder, ...elder_data];
+            store[symbol].ohlc.push(ohlc_data);
+            store[symbol].elder.push(elder_data);
         }
-        
+
+        console.log(store[symbol]);
+
         localStorage.setItem('store', JSON.stringify(store));
      
         let { ohlc, elder } = store[symbol];
@@ -112,6 +98,7 @@ $(document).ready(function() {
         let ohlcData = [];
         let categoryData = [];
         let elderData = [];
+
         ohlc.forEach(ohlc => {
             ohlcObj[ohlc['time']] = [ohlc.open, ohlc.close, ohlc.low, ohlc.high];
         });
@@ -137,10 +124,10 @@ $(document).ready(function() {
     }
 
     async function updateData() {
-        charts.forEach(async ({ chart, symbol }) => {
-            chart.showLoading({
-                text: 'Loading graph. Please wait',
-            });
+        const promises = charts.map(async ({ chart, symbol }) => {
+            // chart.showLoading({
+            //     text: 'Loading graph. Please wait',
+            // });
             const data = await getOneData({ symbol });
             const option = {
                 ...defaultOptions,
@@ -178,8 +165,28 @@ $(document).ready(function() {
 
             chart.setOption(option, true);
             
-            chart.hideLoading();
+            // chart.hideLoading();
         });
+
+        await Promise.all(promises);
+
+        const images = [];
+        const e_chartEls = document.getElementsByClassName('chart');
+        for (let chartEl of e_chartEls) {
+            let symbol = chartEl.getAttribute('symbol');
+            let canvas = chartEl.querySelector('canvas');
+            images.push({ symbol, url: canvas.toDataURL() });
+        }
+
+        setTimeout(() => {
+            fetch('drawing', {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(images)
+            })
+        }, 15000);
     }
 
     async function init() {
@@ -199,8 +206,7 @@ $(document).ready(function() {
         }
 
         localStorage.clear();
-        console.log(`before get all.`)
-        console.log(charts);
+        
         let store = {};
         const promises = charts.map(async ({ symbol }) => {
             const data = await (await fetch(`data?type=elder&symbol=${symbol}&cond=all`)).json();

@@ -8,20 +8,23 @@ const controller = require('./controller');
 const config = require('../config/config.json');
 const sequelize = require('../db/sequelize');
 
+var bodyParser = require('body-parser');
+
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+
 const port = config.GRAPH_SERVER_PORT || 8020;
 
 app.get('/', async function(req, res) {
-    console.log(` here server get(/) start`)
     let result = await controller.getHTML();
     
     res.set('Content-Type', 'text/html');
     res.send(result);
-    console.log(` here server get(/) end`);
 });
 
 app.get('/data', async function(req, res) {
     const { type, symbol, cond } = req.query;
-    console.log(`server ${cond}`);
+
     let result;
     if (cond === 'all') {
         result = await controller.getAllData({ type, symbol });
@@ -32,7 +35,12 @@ app.get('/data', async function(req, res) {
     res.send(result);
 });
 
+app.post('/drawing', async function(req, res) {
+    let result = await controller.makeOnlineGraph(req.body);
+});
+
 app.use('/scripts', express.static(path.join(__dirname, 'scripts')));
+
 sequelize.sequelize_ohlc.authenticate()
     .then(() => {
         console.log(`Connection established successfully with "${config.ohlc.DB_NAME}" db`);
