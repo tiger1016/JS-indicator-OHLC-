@@ -1,2 +1,2 @@
-const symbols = ['dia','spy'];
+const symbols = ['spy'];
 module.exports = { symbols };

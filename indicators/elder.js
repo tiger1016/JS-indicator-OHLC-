@@ -36,7 +36,7 @@ module.exports = {
 
             // technical indicators library expects the earliest data first. Thus reversing the data order. Only used for library
             
-            const { min_elder } = colorsForday(ohlc);
+            const { min_elder } = colorsForday(ohlc, symbol);
 
             return min_elder.reverse();
         },

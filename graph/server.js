@@ -11,13 +11,17 @@ const sequelize = require('../db/sequelize');
 const port = config.GRAPH_SERVER_PORT || 8020;
 
 app.get('/', async function(req, res) {
+    console.log(` here server get(/) start`)
     let result = await controller.getHTML();
+    
     res.set('Content-Type', 'text/html');
     res.send(result);
+    console.log(` here server get(/) end`);
 });
 
 app.get('/data', async function(req, res) {
     const { type, symbol, cond } = req.query;
+    console.log(`server ${cond}`);
     let result;
     if (cond === 'all') {
         result = await controller.getAllData({ type, symbol });
@@ -31,19 +35,19 @@ app.get('/data', async function(req, res) {
 app.use('/scripts', express.static(path.join(__dirname, 'scripts')));
 sequelize.sequelize_ohlc.authenticate()
     .then(() => {
-        console.log(`Connection established successfully with ${config.ohlc.DB_NAME} db`);
+        console.log(`Connection established successfully with "${config.ohlc.DB_NAME}" db`);
         sequelize.sequelize_elder.authenticate()
             .then(() => {
-                console.log(`Connection established successfully with ${config.elder.DB_NAME} db`);
+                console.log(`Connection established successfully with "${config.elder.DB_NAME}" db`);
                 app.listen(port, () => console.log(`App listening on port ${port}`));
             })
             .catch(err => {
-                console.error(`Unable to connect to the database ${config.elder.DB_NAME} db`);
+                console.error(`Unable to connect to the database "${config.elder.DB_NAME}" db`);
                 sequelize.sequelize_ohlc.close();
                 sequelize.sequelize_elder.close();
             });
     })
     .catch(err => {
-        console.error(`Unable to connect to the database ${config.ohlc.DB_NAME} db`);
+        console.error(`Unable to connect to the database "${config.ohlc.DB_NAME}" db`);
         sequelize.sequelize_ohlc.close();
     });

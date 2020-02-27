@@ -41,7 +41,7 @@ function getPriceBarColor({ currentEMA, prevEMA, currentMACD, prevMACD }) {
     return color;
 }
 
-const elder = data => {
+const elder = (data, symbol) => {
     const values = data
         .slice()
         .reverse()
@@ -62,7 +62,7 @@ const elder = data => {
         ) {
             elder.push({
                 time: data[i].time,
-                symbol: 'spy',
+                symbol,
                 price: data[i].close,
                 color: getPriceBarColor({
                     currentEMA: ema[i],
@@ -79,8 +79,12 @@ const elder = data => {
 
 const timeStamp_day = time => 
     time.toUTCString().slice(0, 17);
+const timeStamp_min = time =>
+    time.toUTCString().slice(20,28)
+const timeStamp_hour = time =>
+    time.toUTCString().slice(17,19)
 
-const colorsForday = ohlc => {
+const colorsForday = (ohlc, symbol) => {
     var process_day_data = [];
     var ex_stamp = '';
     var temp_array = [];
@@ -122,7 +126,7 @@ const colorsForday = ohlc => {
             } else {
                 temp_data = [...process_day_data.slice(0, index + 1), element];
             }
-            const dataForCheck = elder(temp_data.reverse()).elder[0];
+            const dataForCheck = elder(temp_data.reverse(), symbol).elder[0];
             if (typeof dataForCheck !== "undefined") {
                 min_elder = [...min_elder, dataForCheck];
             }
@@ -132,18 +136,22 @@ const colorsForday = ohlc => {
 }
 
 const getColorsForday = elder => {
-    var ex_stamp = timeStamp_day(elder[0].time);
     const elder_res = [];
-
-    for (var i = 0; i < elder.length; i ++) {
-        if (timeStamp_day(elder[i].time) !== ex_stamp) {
-            elder_res.push(element[i - 1]);
-            ex_stamp = timeStamp_day(elder[i].time);
+    if (elder.length !== 0) {
+        var ex_stamp = timeStamp_day(elder[0].time);
+        for (var i = 0; i < elder.length; i ++) {
+            if (timeStamp_day(elder[i].time) !== ex_stamp) {
+                elder_res.push(elder[i - 1]);
+                ex_stamp = timeStamp_day(elder[i].time);
+            }
         }
+        elder_res.push(elder[elder.length - 1]);
     }
-    elder_res.push(elder[elder.length - 1]);
+
     return elder_res;
 }
+
+
 
 module.exports = {
     timeStamp_day,

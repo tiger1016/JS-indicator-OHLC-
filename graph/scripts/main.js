@@ -6,7 +6,6 @@ $(document).ready(function() {
         Red: '#fe4856',
         Green: '#92e98a',
     };
-
     const defaultOptions = {
         backgroundColor: '#011426',
         tooltip: {
@@ -83,12 +82,30 @@ $(document).ready(function() {
 
     async function getOneData({ symbol }) {
         const data = await (await fetch(`data?type=elder&symbol=${symbol}&cond=one`)).json();
+        console.log(`get One Data `)
         
-        let store = JSON.parse(localStorage.getItem('store'));
-        store[symbol].ohlc = [...store[symbol].ohlc, ...data.ohlc];
-        store[symbol].elder = [...store[symbol].elder, ...data.elder];
-        localStorage.setItem('store', JSON.stringify(store));
+        const ohlc_data=[...data.ohlc];
+        const elder_data=[...data.elder];
 
+       const store = JSON.parse(localStorage.getItem('store'));
+        
+        console.log(store[symbol]);
+    
+        if (store[symbol].elder.length === 0) {
+            if (elder_data.length !== 0) {
+                store[symbol].ohlc = [...ohlc_data];
+                store[symbol].elder = [...elder_data];
+            }
+        } else {
+            store[symbol].ohlc.pop();
+            store[symbol].elder.pop();
+       
+            store[symbol].ohlc = [...store[symbol].ohlc, ...ohlc_data];
+            store[symbol].elder = [...store[symbol].elder, ...elder_data];
+        }
+        
+        localStorage.setItem('store', JSON.stringify(store));
+     
         let { ohlc, elder } = store[symbol];
         
         let ohlcObj = {};
@@ -160,11 +177,12 @@ $(document).ready(function() {
             };
 
             chart.setOption(option, true);
+            
             chart.hideLoading();
         });
     }
 
-    function init() {
+    async function init() {
         console.log('Main script executed');
         const chartEls = document.getElementsByClassName('chart');
 
@@ -180,15 +198,19 @@ $(document).ready(function() {
             charts.push({ chart, symbol });
         }
 
-        charts.forEach(async ({ symbol }) => {
+        localStorage.clear();
+        console.log(`before get all.`)
+        console.log(charts);
+        let store = {};
+        const promises = charts.map(async ({ symbol }) => {
             const data = await (await fetch(`data?type=elder&symbol=${symbol}&cond=all`)).json();
-
-            let store = {};
-            store[symbol] = data;
-
-            localStorage.setItem('store', JSON.stringify(store));
+            store[symbol] = data;    
         })
         
+        await Promise.all(promises);
+        
+        localStorage.setItem('store', JSON.stringify(store));
+
         updateData();
         setInterval(updateData, 60000);
     }
