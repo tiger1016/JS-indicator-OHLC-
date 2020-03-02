@@ -49,8 +49,20 @@ If you want to run with symbols-file, then please Input all symbols you want int
                                                 ......
                                                 
                                                 
-Carriage Return changes for Linux:
+### Carriage Return changes for Linux:
 
 ./graph/controller/index.js   <-- change line 31 to symbols = data.split("\n");
 
 ./index.js                    <-- change line 67 to symbols = data.split("\n");
+
+
+
+### Hide lines from chart
+
+go to main.js in graph/scripts to jump in 32 line
+
+then you will see splitLine: { show: true }
+
+change it as {show: false}
+
+that the result of 32 line is " splitLine: { show: false }"
