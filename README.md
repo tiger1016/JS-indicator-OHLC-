@@ -23,10 +23,10 @@ npm start -- --symbol="SPY" --symbol="MSFT" --type="sma" --action="db"
 npm start -- --symbol="SPY" --type="elder" --action="api"
 npm start -- --symbol="SPY" --type="rsi" --action="db"
 
-Db and api-key config is stored in the .env file.
+DB and api-key config is stored in the .env file.
 
 ///////////////////////////////////////////////////
-Here is the commands:
+Here are the commands:
 
 spec: symbol might be spy, dia, qqq ....
 
@@ -47,3 +47,8 @@ If you want to run with symbols-file, then please Input all symbols you want int
                                                 qqq
                                                 ppp
                                                 ......
+                                                
+                                                
+Carriage Return changes for Linux:
+./graph/controller/index.js   <-- change line 31 to symbols = data.split("\n");
+./index.js                    <-- change line 67 to symbols = data.split("\n");
