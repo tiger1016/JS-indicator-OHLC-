@@ -50,5 +50,7 @@ If you want to run with symbols-file, then please Input all symbols you want int
                                                 
                                                 
 Carriage Return changes for Linux:
+
 ./graph/controller/index.js   <-- change line 31 to symbols = data.split("\n");
+
 ./index.js                    <-- change line 67 to symbols = data.split("\n");
