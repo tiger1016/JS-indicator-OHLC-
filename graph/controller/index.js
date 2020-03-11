@@ -28,7 +28,7 @@ async function getHTML() {
 
     const data = await readFile(pos);
     
-    symbols = data.split("\r\n");
+    symbols = data.split("\n");
       
     let graphs = symbols.map(symbol => {
         let node = dom.window.document.createElement('div');
@@ -163,7 +163,7 @@ async function getOneData(options) {
         //      finding changed daily_elder
 
                     const e_index = day_elder.findIndex(element => timeStamp_day(element.time) === timeStamp_day(last_Elder.time)  );
-                    const changed_elder = day_elder.slice(e_index, day_elder.length);//return data   including same day and nex day  
+                    const changed_elder = day_elder.slice(e_index, day_elder.length);
                     
    
    
@@ -204,7 +204,7 @@ async function makeGraph() {
         deviceScaleFactor: 1,
     });
     let hostname = os.hostname() || 'localhost';
-    let port = process.env.GRAPH_SERVER_PORT || 8080;
+    let port = process.env.GRAPH_SERVER_PORT || 8020;
     await page.goto(`http://${hostname}:${port}`, { waitUntil: 'networkidle0' });
     // await page.setContent(getHTML(), { waitUntil: 'networkidle0' });
     // await page.addScriptTag({

@@ -21,28 +21,28 @@ $(document).ready(function() {
         //         color: '#fff',
         //     },
         // },
-        grid: {
-            left: '10%',
-            right: '10%',
-            bottom: '15%',
-        },
+        // grid: {
+        //     left: '10%',
+        //     right: '10%',
+        //     bottom: '15%',
+        // },
         yAxis: {
             scale: true,
             axisLine: { lineStyle: { color: '#8392A5' } },
             // splitLine: { show: false }
         },
-        dataZoom: [
-            {
-                type: 'inside',
-                start: 1, // Where to start displaying Data (percentage)
-                end: 100, //
-            },
-            {
-                show: true,
-                type: 'slider',
-                y: '90%',
-            },
-        ],
+        // dataZoom: [
+        //     {
+        //         type: 'inside',
+        //         start: 1, // Where to start displaying Data (percentage)
+        //         end: 100, //
+        //     },
+        //     {
+        //         show: true,
+        //         type: 'slider',
+        //         y: '90%',
+        //     },
+        // ],
     };
 
     function calculateEMA(data, dayCount) {
