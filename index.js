@@ -64,7 +64,7 @@ if (typeof symbols === "string" && symbols === "all") {
     fs.exists(pos, exist => {
         if (exist) {
             fs.readFile(pos, "utf8", (err, data) => {
-                symbols = data.split("\n");
+                symbols = data.split("\r\n");
                 console.log(symbols);
                 run(symbols);   
             })

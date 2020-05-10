@@ -48,36 +48,6 @@ const connection = async () => {
     }) 
 }
 
-
-////--------------           default option        -----------------
-
-const colors = {
-    Blue: '#4447ff',
-    Red: '#fe4856',
-    Green: '#92e98a',
-};
-
-const defaultOptions = {
-    backgroundColor: '#011426',
-    tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-            type: 'cross',
-        },
-    },
-    grid: {
-        left: '10%',
-        right: '10%',
-        bottom: '15%',
-    },
-    yAxis: {
-        scale: true,
-        axisLine: { lineStyle: { color: '#8392A5' } },
-         splitLine: { show: false }
-    },
-
-};
-
 var gStore = {};
 
 // =====       ==========          Function Definition  =========       ==============
@@ -251,46 +221,72 @@ async function getOneData(options) {
     return result;
 }
 
-async function getNewData( symbol ) {
+async function getNewData( symbol, colorData ) {
   
     console.log(`getNewData - > ${++num} step`)
 
     await getOneData({type: 'elder', symbol});
 
-     let { process_day_data, colorsOfelder } = gStore[symbol];
+    let { process_day_data, colorsOfelder } = gStore[symbol];
     //  let { ohlc, elder } = gStore[symbol];
     let ohlc = [...process_day_data]
     let elder = [...colorsOfelder]
     
     let ohlcObj = {};
-    let ohlcData = [];
-    let categoryData = [];
-    let elderData = [];
-
     ohlc.forEach(ohlc => {
         ohlcObj[ohlc['time']] = [ohlc.open, ohlc.close, ohlc.low, ohlc.high];
     });
-    elder.forEach(elder => {
-        let time = elder['time'];
-        categoryData.push(new Date(time).toLocaleDateString("en-US"));
-        ohlcData.push(ohlcObj[time]);
-        elderData.push({
-            value: ohlcObj[time],
-            itemStyle: {
-                color: colors[elder['color']],
-                color0: colors[elder['color']],
-                borderColor: '#555',
-                borderColor0: '#555',
-            },
+
+    var data = [];
+    colorData.forEach(value => {
+        var { colors, borderColor, borderColor0 } = value;
+
+        let ohlcData = [];
+        let categoryData = [];
+        let elderData = [];
+        elder.forEach(elder => {
+            let time = elder['time'];
+            categoryData.push(new Date(time).toLocaleDateString("en-US"));
+            ohlcData.push(ohlcObj[time]);
+            elderData.push({
+                value: ohlcObj[time],
+                itemStyle: {
+                    color: colors[elder['color']],
+                    color0: colors[elder['color']],
+                    borderColor,
+                    borderColor0,
+                },
+            });
         });
+
+        data.push( { categoryData, elderData, ohlcData });
     });
-    return {
-        categoryData,
-        elderData,
-        ohlcData,
-    };
+    
+    return data;
 }
 
+const getReadyColors = () => {
+    var colors = {
+        Blue: '#4447ff',
+        Red: '#fe4856',
+        Green: '#92e98a',
+    };
+
+    var borderColor = '#555';
+    var borderColor0 = '#555';
+    var backgroundColor = '#011426';
+    var xAxisColor = '#8392A5';
+    var yAxisColor = '#8392A5';
+    
+    var emaLineColor = { opacity: 0.5, color: '#1d528b' };
+
+    var colorData = [];
+    colorData.push({ colors, borderColor, borderColor0});
+    var otherData = [];
+    otherData.push({ xAxisColor, yAxisColor, emaLineColor, backgroundColor });
+    
+    return { colorData, otherData };
+}
 
 
 /////     ----------------          File Read     ---------------
@@ -303,7 +299,6 @@ async function getNewData( symbol ) {
 
 
 async function read_File () {
-
       await connection();
 
       const data = await readFile(pos);
@@ -320,83 +315,82 @@ async function read_File () {
     })
 
     await Promise.all(promisesAll);
-    
-
 
     var obj = {
         a: "World"
     };
+
+    var { colorData, otherData } = getReadyColors();
     
-    var jobId = crontab.scheduleJob("*/1 * * * *", function(){
+    var jobId = crontab.scheduleJob("*/1 * * * *", function() {
     
         symbols.map(async  symbol  => {
+            const data_print =  await getNewData(symbol, colorData);
+    
+            data_print.forEach((data, index) => {
+                var { xAxisColor, yAxisColor, emaLineColor, backgroundColor } = otherData[index];
 
-            // console.log(gStore[`${symbol}`])
-            // console.log(gStore[symbol])
-            
-            const data =  await getNewData(symbol);
-    
-       //  = = = = = =   option   = = = = = = = =
-    
-            option = {
-                ...defaultOptions,
-    
-                title: {
-                    text: "elder",
-                },
-                xAxis: {
-                    type: 'category',
-                    data: data.categoryData,
-                    scale: true,
-                    boundaryGap: false,
-                    axisLine: { onZero: false, lineStyle: { color: '#8392A5' } },
-                    splitNumber: 20,
-                    min: 'dataMin',
-                    max: 'dataMax',
-                },
-                series: [
-                    {
-                        name: 'Elder',
-                        type: 'candlestick',
-                        data: data.elderData,
-                    },
-                    {
-                        name: 'EMA13',
-                        type: 'line',
-                        data: calculateEMA(data.ohlcData, 13),
-                        smooth: false,
-                        lineStyle: {
-                            normal: { opacity: 0.5, color: '#1d528b' },
+                var option = {
+                    backgroundColor,
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross',
                         },
-                        showSymbol: false,
                     },
-                ],
-            };
-            
-            node_echarts({
-                path: './output/' + `${symbol}` + `.png`,
-                option,
-                width:  800,
-                height: 500
+                    grid: {
+                        left: '10%',
+                        right: '10%',
+                        bottom: '15%',
+                    },
+                    yAxis: {
+                        scale: true,
+                        axisLine: { lineStyle: { color: yAxisColor } },
+                            splitLine: { show: false }
+                    },        
+                    title: {
+                        text: "elder",
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: data.categoryData,
+                        scale: true,
+                        boundaryGap: false,
+                        axisLine: { onZero: false, lineStyle: { color: xAxisColor } },
+                        splitNumber: 20,
+                        min: 'dataMin',
+                        max: 'dataMax',
+                    },
+                    series: [
+                        {
+                            name: 'Elder',
+                            type: 'candlestick',
+                            data: data.elderData,
+                        },
+                        {
+                            name: 'EMA13',
+                            type: 'line',
+                            data: calculateEMA(data.ohlcData, 13),
+                            smooth: false,
+                            lineStyle: {
+                                normal: emaLineColor,
+                            },
+                            showSymbol: false,
+                        },
+                    ],
+                };
+                
+                node_echarts({
+                    path: './output/' + `${symbol}_` + index + `.png`,
+                    option,
+                    width:  800,
+                    height: 500
+                })
             })
-    
-    
-        });
-    
-        //  await Promise.all(promises);
-    
+        });   
      
-    }, null, obj);
-    
-
-
-
-
+    }, null, obj);    
 }
-
-
-//               =  = = = = = =   **     Code start     **   = = = = = = = = =
-
 
 read_File();  
 
