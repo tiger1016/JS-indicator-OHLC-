@@ -267,31 +267,64 @@ async function getNewData( symbol, colorData ) {
 }
 
 const getReadyColors = () => {
-    var colors = {
+    var colors1 = {
         Blue: '#4447ff',
         Red: '#fe4856',
         Green: '#92e98a',
     };
 
-    var colorsR = {
-        Blue: revertColor(colors.Blue),
-        Red: revertColor(colors.Red),
-        Green: revertColor(colors.Green)
+    var colors2 = {
+        Blue: '#2323ea',
+        Red: '#ea5445',
+        Green: '#23ea65'
     };
 
-    var borderColor = '#050505';
-    var borderColor0 = '#050505';
-    var backgroundColor = '#011426';
-    var xAxisColor = '#8392A5';
-    var yAxisColor = '#8392A5';
+    var borderColor_1 = '#050505';
+    var borderColor0_1 = '#050505';
+    var backgroundColor1 = '#011426';
+    var xAxisColor1 = '#8392A5';
+    var yAxisColor1 = '#8392A5';
     
-    var emaLineColor = { opacity: 0.5, color: '#1d528b' };
+    var emaLineColor1 = { opacity: 0.5, color: '#1d528b' };
+
+    var borderColor_2 = '#555555';
+    var borderColor0_2 = '#555555';
+    var backgroundColor2 = '#5134a6';
+    var xAxisColor2 = '#f32215';
+    var yAxisColor2 = '#f32215';
+    
+    var emaLineColor2 = { opacity: 0.5, color: '#fd5f8b' };
 
     var colorData = [];
-    colorData.push({ colors, borderColor, borderColor0 }, { colors: colorsR, borderColor: revertColor(borderColor), borderColor0: revertColor(borderColor0) });
+    colorData.push(
+        {
+            colors: colors1,
+            borderColor: borderColor_1,
+            borderColor0: borderColor0_1
+        },
+        {
+            colors: colors2,
+            borderColor: borderColor_2,
+            borderColor0: borderColor0_2
+        }
+    );
+
     var otherData = [];
-    otherData.push({ xAxisColor, yAxisColor, emaLineColor, backgroundColor }, { xAxisColor: revertColor(xAxisColor), yAxisColor: revertColor(yAxisColor), emaLineColor: { opacity: 0.5, color: revertColor(emaLineColor.color)}, backgroundColor: revertColor(backgroundColor) });
-    
+    otherData.push(
+        { 
+            xAxisColor: xAxisColor1, 
+            yAxisColor: yAxisColor1, 
+            emaLineColor: emaLineColor1, 
+            backgroundColor: backgroundColor1 
+        },
+        { 
+            xAxisColor: xAxisColor2, 
+            yAxisColor: yAxisColor2, 
+            emaLineColor: emaLineColor2, 
+            backgroundColor: backgroundColor2 
+        }
+    );
+
     return { colorData, otherData };
 }
 
