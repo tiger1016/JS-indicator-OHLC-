@@ -1,12 +1,12 @@
 {
     "ohlc": {
-        "DB_HOST": "71.237.171.150",
+        "DB_HOST": "73.96.141.67",
         "DB_USER": "admin",
         "DB_PASS": "4j3ZSZVD5AQauxad",
         "DB_NAME": "1m"
     },
     "elder": {
-        "DB_HOST": "71.237.171.150",
+        "DB_HOST": "73.96.141.67",
         "DB_USER": "admin",
         "DB_PASS": "4j3ZSZVD5AQauxad",
         "DB_NAME": "1mEx"

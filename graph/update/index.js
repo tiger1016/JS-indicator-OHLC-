@@ -97,6 +97,7 @@ async function getAllData(options) {
         default:
             result = [];
     }
+    
     return result;
 }
 
@@ -272,8 +273,14 @@ const getReadyColors = () => {
         Green: '#92e98a',
     };
 
-    var borderColor = '#555';
-    var borderColor0 = '#555';
+    var colorsR = {
+        Blue: revertColor(colors.Blue),
+        Red: revertColor(colors.Red),
+        Green: revertColor(colors.Green)
+    };
+
+    var borderColor = '#050505';
+    var borderColor0 = '#050505';
     var backgroundColor = '#011426';
     var xAxisColor = '#8392A5';
     var yAxisColor = '#8392A5';
@@ -281,11 +288,22 @@ const getReadyColors = () => {
     var emaLineColor = { opacity: 0.5, color: '#1d528b' };
 
     var colorData = [];
-    colorData.push({ colors, borderColor, borderColor0});
+    colorData.push({ colors, borderColor, borderColor0 }, { colors: colorsR, borderColor: revertColor(borderColor), borderColor0: revertColor(borderColor0) });
     var otherData = [];
-    otherData.push({ xAxisColor, yAxisColor, emaLineColor, backgroundColor });
+    otherData.push({ xAxisColor, yAxisColor, emaLineColor, backgroundColor }, { xAxisColor: revertColor(xAxisColor), yAxisColor: revertColor(yAxisColor), emaLineColor: { opacity: 0.5, color: revertColor(emaLineColor.color)}, backgroundColor: revertColor(backgroundColor) });
     
     return { colorData, otherData };
+}
+
+const revertColor = hexTripletColor => {
+    var color = hexTripletColor;
+    color = color.substring(1);
+    color = parseInt(color, 16);
+    color = 0xFFFFFF ^ color;
+    color = color.toString(16);
+    color = ("000000" + color).slice(-6); 
+    color = "#" + color;
+    return color;
 }
 
 
